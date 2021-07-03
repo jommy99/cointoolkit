@@ -1,9 +1,11 @@
-Cointoolkit
+Pandacointoolkit
 =======
 
-A Open Source Browser Based Bitcoin Wallet.
+A Open Source Browser Based Pandacoin, Peercoin, Bitcoin Wallet...
 
-Live version available at https://indiciumfund.github.io/cointoolkit/
+Live version available at 
+https://cryptodepot.org/pandacointoolkit/
+https://indiciumfund.github.io/cointoolkit/
 
 Github URL: https://github.com/indiciumfund/cointoolkit
 
