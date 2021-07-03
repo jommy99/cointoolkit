@@ -14,6 +14,7 @@
 	coinjs.apikey = "1205735eba8c";
 	//coinjs.comm = ledger.comm_u2f;
 
+	coinjs.developer = 'PWEuZH8VWWnYKjwiuL7iRYCDggJjiVqLRa'; //jrm Pandacoin
 	/* Bitcoin by default */
 	coinjs.pub = 0x00;
 	coinjs.priv = 0x80;
@@ -24,10 +25,10 @@
 	coinjs.txExtraTimeFieldValue = false;
 	coinjs.txExtraUnitField = false;
 	coinjs.txExtraUnitFieldValue = false;
-	
+
 	coinjs.decimalPlaces = 8;
 	coinjs.symbol = 'BTC';
-	
+
 
 	coinjs.compressed = false;
 
@@ -290,7 +291,7 @@
 		for (var i = 0; i < pubkeys.length; ++i) {
 			s.writeBytes(Crypto.util.hexToBytes(pubkeys[i]));
 		}
-		s.writeOp(81 + pubkeys.length - 1); //OP_1 
+		s.writeOp(81 + pubkeys.length - 1); //OP_1
 		s.writeOp(174); //OP_CHECKMULTISIG
 		var x = ripemd160(Crypto.SHA256(s.buffer, {asBytes: true}), {asBytes: true});
 		x.unshift(coinjs.multisig);
@@ -310,7 +311,7 @@
 
 	/* new time locked address, provide the pubkey and time necessary to unlock the funds.
 	   when time is greater than 500000000, it should be a unix timestamp (seconds since epoch),
-	   otherwise it should be the block height required before this transaction can be released. 
+	   otherwise it should be the block height required before this transaction can be released.
 
 	   may throw a string on failure!
 	*/
@@ -354,7 +355,7 @@
 	/* create a new segwit bech32 encoded address */
 	coinjs.bech32Address = function(pubkey){
 		var program = ripemd160(Crypto.SHA256(Crypto.util.hexToBytes(pubkey), {asBytes: true}), {asBytes: true});
-		var address = coinjs.bech32_encode(coinjs.bech32.hrp, [coinjs.bech32.version].concat(coinjs.bech32_convert(program, 8, 5, true))); 
+		var address = coinjs.bech32_encode(coinjs.bech32.hrp, [coinjs.bech32.version].concat(coinjs.bech32_convert(program, 8, 5, true)));
 		return {'address':address, 'type':'bech32', 'redeemscript':Crypto.util.bytesToHex(program)};
 	}
 
@@ -451,11 +452,11 @@
 						alert("Stealth Multisig is currently not supported!");
 						return false;
 					};
-				
+
 					o.spendkey = Crypto.util.bytesToHex(front.slice(36, 69));
 					o.m = front[69];
 					o.prefixlen = front[70];
-				
+
 					if (o.prefixlen > 0) {
 						alert("Stealth Address Prefixes are currently not supported!");
 						return false;
@@ -479,6 +480,12 @@
 				return false;
 			}
 		}
+	}
+	/* retreive the balance from a given address */
+	coinjs.addressBalance = function(explorer_api, address, callback){
+//console.log(coinjs.explorer_api);
+
+		coinjs.ajax(explorer_api+address, callback, "GET");
 	}
 
 	/* decompress an compressed public key */
@@ -539,7 +546,7 @@
 			ret.push(hrp.charCodeAt(p) & 31);
 		}
 		return ret;
-	}	
+	}
 
 	coinjs.	bech32_verifyChecksum = function(hrp, data) {
 		return coinjs.bech32_polymod(coinjs.bech32_hrpExpand(hrp).concat(data)) === 1;
@@ -551,7 +558,7 @@
 		var ret = [];
 		for (var p = 0; p < 6; ++p) {
 			ret.push((mod >> 5 * (5 - p)) & 31);
-		}	
+		}
 		return ret;
 	}
 
@@ -1138,7 +1145,7 @@
 
 	/* create a new transaction object */
 	coinjs.transaction = function() {
-
+//jrm2 we need tx.nTime for Pandacoin
 		var r = {};
 		r.version = 1;
 		r.lock_time = 0;
@@ -1147,8 +1154,8 @@
 		r.witness = false;
 		r.timestamp = null;
 		r.block = null;
-
-		r.nTime = 0;
+		
+		r.nTime = (Date.now() / 1000)*1;
 		r.nUnit = 0;
 
 		/* add an input to a transaction */
@@ -1174,24 +1181,24 @@
 		r.addstealth = function(stealth, value){
 			var ephemeralKeyBigInt = BigInteger.fromByteArrayUnsigned(Crypto.util.hexToBytes(coinjs.newPrivkey()));
 			var curve = EllipticCurve.getSECCurveByName("secp256k1");
-			
+
 			var p = EllipticCurve.fromHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
 			var a = BigInteger.ZERO;
 			var b = EllipticCurve.fromHex("7");
 			var calccurve = new EllipticCurve.CurveFp(p, a, b);
-			
+
 			var ephemeralPt = curve.getG().multiply(ephemeralKeyBigInt);
 			var scanPt = calccurve.decodePointHex(stealth.scankey);
 			var sharedPt = scanPt.multiply(ephemeralKeyBigInt);
 			var stealthindexKeyBigInt = BigInteger.fromByteArrayUnsigned(Crypto.SHA256(sharedPt.getEncoded(true), {asBytes: true}));
-			
+
 			var stealthindexPt = curve.getG().multiply(stealthindexKeyBigInt);
 			var spendPt = calccurve.decodePointHex(stealth.spendkey);
 			var addressPt = spendPt.add(stealthindexPt);
-			
+
 			var sendaddress = coinjs.pubkey2address(Crypto.util.bytesToHex(addressPt.getEncoded(true)));
-			
-			
+
+
 			var OPRETBytes = [6].concat(Crypto.util.randomBytes(4)).concat(ephemeralPt.getEncoded(true)); // ephemkey data
 			var q = coinjs.script();
 			q.writeOp(106); // OP_RETURN
@@ -1199,14 +1206,14 @@
 			v = {};
 			v.value = 0;
 			v.script = q;
-			
+
 			this.outs.push(v);
-			
+
 			var o = {};
 			o.value = new BigInteger('' + Math.round((value*1) * ("1e"+coinjs.decimalPlaces)), 10);
 			var s = coinjs.script();
 			o.script = s.spendToScript(sendaddress);
-			
+
 			return this.outs.push(o);
 		}
 
@@ -1235,8 +1242,13 @@
 				o.script = s;
 				return this.outs.push(o);
 			}
+			/* list unspent transactions added jrm from coinbin */
+			r.listUnspent = function(address, callback) {
+				console.log("no");
+				coinjs.ajax('https://api.cryptodepot.org/chainz/listunspent/pnd/'+address, callback, "GET");
+			}
 
-		/* add unspent to transaction */
+		/* old add unspent to transaction
 		r.addUnspent = function(address, callback, script, segwit, sequence){
 			var self = this;
 			this.listUnspent(address, function(data){
@@ -1261,9 +1273,35 @@
 					var txhash = (u.getElementsByTagName("tx_hash")[0].childNodes[0].nodeValue).match(/.{1,2}/g).reverse().join("")+'';
 					var n = u.getElementsByTagName("tx_output_n")[0].childNodes[0].nodeValue;
 					var scr = script || u.getElementsByTagName("script")[0].childNodes[0].nodeValue;
+*/
+/* add unspent to transaction */
+r.addUnspent = function(address, callback, script, segwit, sequence){
+	var self = this;
+				console.log(self);
+	this.listUnspent(address, function(data){
+		var s = coinjs.script();
+		console.log(s);
+						var value = 0;
+						console.log(value);
+		var total = 0;
+						console.log(total);
+		var x = {};
+						console.log(x);
+
+		var jsonDoc = JSON.parse(data);
+
+		var unspent = jsonDoc.unspent_outputs;
+						console.log(unspent);
+		for(i=0;i<unspent.length;i++){
+			var u = unspent[i];
+						console.log(u);
+
+								var txhash = u.tx_hash;
+			var n = u.tx_ouput_n;
+			var scr = u.script;
 
 					if(segwit){
-						/* this is a small hack to include the value with the redeemscript to make the signing procedure smoother. 
+						/* this is a small hack to include the value with the redeemscript to make the signing procedure smoother.
 						It is not standard and removed during the signing procedure. */
 
 						s = coinjs.script();
@@ -1275,13 +1313,16 @@
 
 					var seq = sequence || false;
 					self.addinput(txhash, n, scr, seq);
-					value += u.getElementsByTagName("value")[0].childNodes[0].nodeValue*1;
+					//jrm old value += u.getElementsByTagName("value")[0].childNodes[0].nodeValue*1;
+					value += u.value*1;   //jrm added from coinbin
 					total++;
 				}
 
-				x.unspent = $(xmlDoc).find("unspent");
-				x.value = value;
-				x.total = total;
+				//jrm old x.unspent = $(xmlDoc).find("unspent");
+				x.unspent = unspent;   //jrm added from coinbin
+				//jrm2 was x.value = value;
+			x.value = (value/100);
+			x.total = total;
 				return callback(x);
 			});
 		}
@@ -1294,6 +1335,11 @@
 				self.sign(wif);
 				return callback(data);
 			});
+		}
+		/* broadcast a transaction */
+		r.broadcast = function(callback, txhex){
+			var tx = txhex || this.serialize();
+			coinjs.ajax("https://chainz.cryptoid.info/pnd/api.dws?q=pushtx", callback, "POST", tx);
 		}
 
 		/* generate the transaction hash to sign from a transaction input */
@@ -1378,10 +1424,10 @@
 
 		/* generate a segwit transaction hash to sign from a transaction input */
 		r.transactionHashSegWitV0 = function(index, sigHashType){
-			/* 
+			/*
 			   Notice: coinb.in by default, deals with segwit transactions in a non-standard way.
 			   Segwit transactions require that input values are included in the transaction hash.
-			   To save wasting resources and potentially slowing down this service, we include the amount with the 
+			   To save wasting resources and potentially slowing down this service, we include the amount with the
 			   redeem script to generate the transaction hash and remove it after its signed.
 			*/
 
@@ -1392,7 +1438,7 @@
 			}
 
 			if(extract['value'] == -1){
-				return {'result':0, 'fail':'value', 'response':'unable to generate a valid segwit hash without a value'};				
+				return {'result':0, 'fail':'value', 'response':'unable to generate a valid segwit hash without a value'};
 			}
 
 			var scriptcode = Crypto.util.hexToBytes(extract['script']);
@@ -1418,13 +1464,13 @@
 			var version = coinjs.numToBytes(parseInt(this.version), 4);
 
 			var bufferTmp = [];
-			if(!(sigHashType >= 80)){	// not sighash anyonecanpay 
+			if(!(sigHashType >= 80)){	// not sighash anyonecanpay
 				for(var i = 0; i < this.ins.length; i++){
 					bufferTmp = bufferTmp.concat(Crypto.util.hexToBytes(this.ins[i].outpoint.hash).reverse());
 					bufferTmp = bufferTmp.concat(coinjs.numToBytes(this.ins[i].outpoint.index, 4));
 				}
 			}
-			var hashPrevouts = bufferTmp.length >= 1 ? Crypto.SHA256(Crypto.SHA256(bufferTmp, {asBytes: true}), {asBytes: true}) : zero; 
+			var hashPrevouts = bufferTmp.length >= 1 ? Crypto.SHA256(Crypto.SHA256(bufferTmp, {asBytes: true}), {asBytes: true}) : zero;
 
 			var bufferTmp = [];
 			if(!(sigHashType >= 80) && sigHashType != 2 && sigHashType != 3){ // not sighash anyonecanpay & single & none
@@ -1432,7 +1478,7 @@
 					bufferTmp = bufferTmp.concat(coinjs.numToBytes(this.ins[i].sequence, 4));
 				}
 			}
-			var hashSequence = bufferTmp.length >= 1 ? Crypto.SHA256(Crypto.SHA256(bufferTmp, {asBytes: true}), {asBytes: true}) : zero; 
+			var hashSequence = bufferTmp.length >= 1 ? Crypto.SHA256(Crypto.SHA256(bufferTmp, {asBytes: true}), {asBytes: true}) : zero;
 
 			var outpoint = Crypto.util.hexToBytes(this.ins[index].outpoint.hash).reverse();
 			outpoint = outpoint.concat(coinjs.numToBytes(this.ins[index].outpoint.index, 4));
@@ -1458,7 +1504,7 @@
 			var locktime = coinjs.numToBytes(this.lock_time, 4);
 			var sighash = coinjs.numToBytes(sigHashType, 4);
 
-			var buffer = []; 
+			var buffer = [];
 			buffer = buffer.concat(version);
 			buffer = buffer.concat(hashPrevouts);
 			buffer = buffer.concat(hashSequence);
@@ -1483,7 +1529,7 @@
 				} else if((this.ins[index].script.chunks.length==2) && this.ins[index].script.chunks[0][0]==48 && this.ins[index].script.chunks[1].length == 5 && this.ins[index].script.chunks[1][1]==177){//OP_CHECKLOCKTIMEVERIFY
 					// hodl script (signed)
 					return {'type':'hodl', 'signed':'true', 'signatures':1, 'script': Crypto.util.bytesToHex(this.ins[index].script.buffer)};
-				} else if((this.ins[index].script.chunks.length==2) && this.ins[index].script.chunks[0][0]==48){ 
+				} else if((this.ins[index].script.chunks.length==2) && this.ins[index].script.chunks[0][0]==48){
 					// regular scriptPubkey (probably signed)
 					return {'type':'scriptpubkey', 'signed':'true', 'signatures':1, 'script': Crypto.util.bytesToHex(this.ins[index].script.buffer)};
 				} else if(this.ins[index].script.chunks.length == 5 && this.ins[index].script.chunks[1] == 177){//OP_CHECKLOCKTIMEVERIFY
@@ -1663,7 +1709,7 @@
 			this.ins[index].script = s;
 			return true;
 		}
-		
+
 		/* sign a multisig input */
 		r.signmultisig = function(index, wif, sigHashType, readySignature){
 
@@ -1679,7 +1725,7 @@
 				var r = {};
 				var c = 0;
 				if (scriptSig.chunks[0]==0 && scriptSig.chunks[scriptSig.chunks.length-1][scriptSig.chunks[scriptSig.chunks.length-1].length-1]==174){
-					for(var i=1;i<scriptSig.chunks.length-1;i++){				
+					for(var i=1;i<scriptSig.chunks.length-1;i++){
 						if (scriptSig.chunks[i] != 0){
 							c++;
 							r[c] = scriptSig.chunks[i];
@@ -1737,7 +1783,7 @@
 
 					// remove any non standard data we store, i.e. input value
 					var script = coinjs.script();
-					script.writeBytes(this.ins[index].script.chunks[0]);	
+					script.writeBytes(this.ins[index].script.chunks[0]);
 					this.ins[index].script = script;
 
 					if(!coinjs.isArray(this.witness)){
@@ -1746,9 +1792,9 @@
 
 					this.witness.push([signature, wif2['pubkey']]);
 
-					/* attempt to reorder witness data as best as we can. 
-					   data can't be easily validated at this stage as 
-					   we dont have access to the inputs value and 
+					/* attempt to reorder witness data as best as we can.
+					   data can't be easily validated at this stage as
+					   we dont have access to the inputs value and
 					   making a web call will be too slow. */
 
 					var witness_order = [];
@@ -1797,17 +1843,17 @@
 		r.scriptListSigs = function(scriptSig){
 			var r = [];
 			if (scriptSig.chunks[0]==0 && scriptSig.chunks[scriptSig.chunks.length-1][scriptSig.chunks[scriptSig.chunks.length-1].length-1]==174){
-				for(var i=1;i<scriptSig.chunks.length-1;i++){				
+				for(var i=1;i<scriptSig.chunks.length-1;i++){
 					r.push(scriptSig.chunks[i]);
 				}
 			}
 			return r;
 		}
-		
+
 		r.extractRedeemScript = function(script){
 			return (script.chunks[script.chunks.length-1]==174) ? script.buffer : script.chunks[script.chunks.length-1];
 		}
-		
+
 		/* sign a multisig input */
 		/*
 		r.signmultisig = function(index, wif){
@@ -1841,7 +1887,7 @@
 			}  else if (this.ins[index].script.chunks[0]==0 && this.ins[index].script.chunks[this.ins[index].script.chunks.length-1][this.ins[index].script.chunks[this.ins[index].script.chunks.length-1].length-1]==174){
 				var signatures = {};
 				var pubkey;
-				
+
 				for (var y = 0; y < sigsList.length; y++) {
 					pubkey = coinjs.verifySignature(sighash, sigsList[y], pubkeyList)
 					if(pubkey){
@@ -1868,22 +1914,22 @@
 		}
 
 
-		
+
 		r.listMultiSignature = function (index) {
 			var list = {};
-			
+
 			var s = this.extractScriptKey(index);
 			if(s['type'] != 'multisig') return false;
-			
+
 			var redeemScript = this.extractRedeemScript(this.ins[index].script);
-			
+
 			var sighash = Crypto.util.hexToBytes(this.transactionHash(index));
 			var pubkeyList = this.scriptListPubkey(coinjs.script(redeemScript));
-			
+
 			for (var x = 0; x < pubkeyList.length; x++) {
 				list[pubkeyList[x]] = false;
 			}
-			
+
 			if (s['signed']) {
 				var sigsList = this.scriptListSigs(this.ins[index].script);
 				var pubkey = false;
@@ -1901,12 +1947,12 @@
 
 			return list;
 		}
-		
+
 		r.combineMultiSignature = function (tx) {
 			var tx2 = this.deserialize(tx);
 
 			if (this.transactionHash(0) != tx2.transactionHash(0)) return false;
-			
+
 			var newTx = coinjs.clone(this);
 			for (var index = 0; index < this.ins.length; index++) {
 				var s = this.extractScriptKey(index);
@@ -1916,7 +1962,7 @@
 
 					var listThis = this.listMultiSignature(index);
 					var list2 = tx2.listMultiSignature(index);
-					
+
 					var s = coinjs.script();
 					s.writeOp(0);
 					for (var i in pubkeyList) {
@@ -1931,7 +1977,7 @@
 							s.writeBytes(Crypto.util.hexToBytes(valid));
 						}
 					}
-					
+
 					s.writeBytes(redeemScript); // redeemScript
 
 					newTx.ins[index].script = s
@@ -2103,7 +2149,7 @@
 			}
 
 			obj.lock_time = readAsInt(4);
-			
+
 			if (coinjs.txExtraUnitField) {
 				obj.nUnit = readAsInt(1);
 			}
@@ -2241,7 +2287,7 @@
 
 		var bytes = bi.toByteArrayUnsigned();
 		while (leadingZerosNum-- > 0) bytes.unshift(0);
-		return bytes;		
+		return bytes;
 	}
 
 	/* raw ajax function to avoid needing bigger frame works like jquery, mootools etc */
@@ -2289,7 +2335,7 @@
 
 	coinjs.numToBytes = function(num,bytes) {
 		if (typeof bytes === "undefined") bytes = 8;
-		if (bytes == 0) { 
+		if (bytes == 0) {
 			return [];
 		} else if (num == -1){
 			return Crypto.util.hexToBytes("ffffffffffffffff");
@@ -2299,7 +2345,7 @@
 	}
 
 	coinjs.numToByteArray = function(num) {
-		if (num <= 256) { 
+		if (num <= 256) {
 			return [num];
 		} else {
 			return [num % 256].concat(coinjs.numToByteArray(Math.floor(num / 256)));
@@ -2358,7 +2404,7 @@
 		}
 		return r;
 	}
-	
+
 	coinjs.formatAmount = function(amount) {
 		return (amount/("1e"+coinjs.decimalPlaces)).toString() + " " + coinjs.symbol;
 	}
