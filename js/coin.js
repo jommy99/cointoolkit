@@ -4,7 +4,13 @@
 
  Originally by http://github.com/OutCast3k/coinjs
 */
-
+$(document).ready(function() {
+		var host = $("#coinjs_coin option:selected").val();
+console.log(host);
+$("#coinSelector").click(function() {
+    host = $("#coinjs_coin option:selected").val();
+		console.log("It Worked: " + host);
+  });
 (function () {
 
 	var coinjs = window.coinjs = function () { };
@@ -1154,7 +1160,7 @@
 		r.witness = false;
 		r.timestamp = null;
 		r.block = null;
-		
+
 		r.nTime = (Date.now() / 1000)*1;
 		r.nUnit = 0;
 
@@ -1244,8 +1250,19 @@
 			}
 			/* list unspent transactions added jrm from coinbin */
 			r.listUnspent = function(address, callback) {
-				console.log("no");
+				console.log("List Unspent: " + host);
+				if(host == "pandacoin") {
+					console.log(host);
 				coinjs.ajax('https://api.cryptodepot.org/chainz/listunspent/pnd/'+address, callback, "GET");
+				}
+				else if(host == "blackcoin") {
+					console.log(host);
+				coinjs.ajax('https://api.cryptodepot.org/chainz/listunspent/blk/'+address, callback, "GET");
+				}
+				else if(host == "peercoin") {
+					console.log(host);
+				coinjs.ajax('https://api.cryptodepot.org/chainz/listunspent/ppc/'+address, callback, "GET");
+				}
 			}
 
 		/* old add unspent to transaction
@@ -1321,7 +1338,15 @@ r.addUnspent = function(address, callback, script, segwit, sequence){
 				//jrm old x.unspent = $(xmlDoc).find("unspent");
 				x.unspent = unspent;   //jrm added from coinbin
 				//jrm2 was x.value = value;
+				if(host == "pandacoin") {
 			x.value = (value/100);
+			}
+			else if(host == "blackcoin") {
+			 x.value = value;
+		 }
+		 else if(host == "peercoin") {
+			x.value = value/94;
+		}
 			x.total = total;
 				return callback(x);
 			});
@@ -1339,7 +1364,19 @@ r.addUnspent = function(address, callback, script, segwit, sequence){
 		/* broadcast a transaction */
 		r.broadcast = function(callback, txhex){
 			var tx = txhex || this.serialize();
+			console.log("Broadcast: " + host);
+			if(host == "pandacoin") {
+				console.log(host);
 			coinjs.ajax("https://chainz.cryptoid.info/pnd/api.dws?q=pushtx", callback, "POST", tx);
+			}
+			else if(host == "blackcoin") {
+				console.log(host);
+				coinjs.ajax("https://chainz.cryptoid.info/blk/api.dws?q=pushtx", callback, "POST", tx);
+			}
+			else if(host == "peercoin") {
+				console.log(host);
+				coinjs.ajax("https://api.cryptodepot.org/ppc/broadcast/" + tx, callback, "GET", tx);
+			}
 		}
 
 		/* generate the transaction hash to sign from a transaction input */
@@ -2409,3 +2446,4 @@ r.addUnspent = function(address, callback, script, segwit, sequence){
 		return (amount/("1e"+coinjs.decimalPlaces)).toString() + " " + coinjs.symbol;
 	}
 })();
+});
