@@ -2575,6 +2575,21 @@ var bcBasedExplorer = {
 		/* open wallet code */
 
 	$("#openBtn").click(function(){
+    if ($("#coinjs_coin option:selected").val() == "pandacoin") {
+        document.getElementById("txFee").value = `5.0`;
+        document.getElementById("developerDonation").value = `1.0`;
+        document.getElementById("spendTicker").innerHTML = 'PND';
+    }
+    else if ($("#coinjs_coin option:selected").val() == "blackcoin") {
+        document.getElementById("txFee").value = `0.01`;
+        document.getElementById("developerDonation").value = `0.01`;
+        document.getElementById("spendTicker").innerHTML = 'BLK';
+    }
+    else if ($("#coinjs_coin option:selected").val() == "peercoin") {
+        document.getElementById("txFee").value = `0.01`;
+        document.getElementById("developerDonation").value = `0.01`;
+        document.getElementById("spendTicker").innerHTML = 'PPC';
+    }
 		var email = $("#openEmail").val().toLowerCase();
 		if(email.match(/[\s\w\d]+@[\s\w\d]+/g)){
 			if($("#openPass").val().length>=10){
@@ -2736,33 +2751,30 @@ var bcBasedExplorer = {
         //jrm added from allcoinsSubmitButtonIDHere
         tx2.broadcast(function(data){
           console.log(data);
-          if(data.startsWith('"')){
-            var txid = data.match(/^"([^"]+)"/)[1];
-              if ($("#coinjs_coin option:selected").val() == "pandacoin") {
-                console.log("This is pandacoins TXID message")
-                $("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-success').html('txid: <a href="https://chainz.cryptoid.info/pnd/tx.dws?'+ txid +'" target="_blank">'+ txid +'</a>');
-              } else if ($("#coinjs_coin option:selected").val() == "blackcoin") {
-                console.log("This is blackcoin TXID message")
-                $("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-success').html('txid: <a href="https://chainz.cryptoid.info/blk/tx.dws?'+ txid +'" target="_blank">'+ txid +'</a>');
-              }
-          } else if(data.startsWith('{"result"')) {
-            var txid = data.result;
-              if ($("#coinjs_coin option:selected").val() == "pandacoin") {
-                console.log("This is pandacoins TXID message")
-                $("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-success').html('txid: <a href="https://chainz.cryptoid.info/pnd/tx.dws?'+ txid +'" target="_blank">'+ txid +'</a>');
-              } else if ($("#coinjs_coin option:selected").val() == "blackcoin") {
-                console.log("This is blackcoin TXID message")
-                $("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-success').html('txid: <a href="https://chainz.cryptoid.info/blk/tx.dws?'+ txid +'" target="_blank">'+ txid +'</a>');
+            if(data.startsWith('"')){
+              var txid = data.match(/^"([^"]+)"/)[1];
+                if ($("#coinjs_coin option:selected").val() == "pandacoin") {
+                  console.log("This is pandacoins TXID message")
+                  $("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-success').html('txid: <a href="https://chainz.cryptoid.info/pnd/tx.dws?'+ txid +'" target="_blank">'+ txid +'</a>');
+                  } else if ($("#coinjs_coin option:selected").val() == "blackcoin") {
+                  console.log("This is blackcoin TXID message")
+                  $("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-success').html('txid: <a href="https://chainz.cryptoid.info/blk/tx.dws?'+ txid +'" target="_blank">'+ txid +'</a>');
               }
           }
           else if(data.startsWith('{')) {
-            console.log("Failure Data: "+ data) // Data from fail
+              if ($("#coinjs_coin option:selected").val() == "peercoin") {
+                txid = JSON.parse(data);
+                console.log(txid);
+                console.log(txid.result);
+                $("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-success').html('txid: <a href="https://chainz.cryptoid.info/ppc/tx.dws?'+ txid.result +'" target="_blank">'+ txid.result +'</a>');
+            } else {
             errmsg = JSON.parse(data.split('\n')[0])['error']['message'];
             console.log(errmsg);
             $("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-danger').html('Error: '+errmsg);
             $("#walletSendFailTransaction").removeClass('hidden');
             $("#walletSendFailTransaction textarea").val(signed);
             thisbtn.attr('disabled',false);
+            }
           } else {
             console.log(data);
             $("#walletSendConfirmStatus").removeClass('hidden').addClass('alert-danger').html('Error: Unknown Error');

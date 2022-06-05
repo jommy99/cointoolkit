@@ -19,8 +19,16 @@ $("#coinSelector").click(function() {
 	coinjs.debug = false;
 	coinjs.apikey = "1205735eba8c";
 	//coinjs.comm = ledger.comm_u2f;
-
-	coinjs.developer = 'PWEuZH8VWWnYKjwiuL7iRYCDggJjiVqLRa'; //jrm Pandacoin
+if(host == "pandacoin") {
+	coinjs.developer = 'PWEuZH8VWWnYKjwiuL7iRYCDggJjiVqLRa';
+}
+else if(host == "blackcoin") {
+	coinjs.developer = 'B6skiNcVzAmRzbSoS8Age9EFK22M1bmyBg';
+}
+else if(host == "peercoin") {
+	coinjs.developer = 'PTKEhDHCgHHZD4ZXPW9MSe8NFc4eFbPaqy';
+}
+	//coinjs.developer = 'PWEuZH8VWWnYKjwiuL7iRYCDggJjiVqLRa'; //jrm Pandacoin
 	/* Bitcoin by default */
 	coinjs.pub = 0x00;
 	coinjs.priv = 0x80;
@@ -1345,7 +1353,7 @@ r.addUnspent = function(address, callback, script, segwit, sequence){
 			 x.value = value;
 		 }
 		 else if(host == "peercoin") {
-			x.value = value/94;
+			x.value = value/99.999;
 		}
 			x.total = total;
 				return callback(x);
